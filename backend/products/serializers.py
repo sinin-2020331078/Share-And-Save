@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import FoodItem, FreeProduct
+from .models import FoodItem, FreeProduct, DiscountProduct
 
 class FoodItemSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.email')
@@ -99,4 +99,106 @@ class FreeProductSerializer(serializers.ModelSerializer):
         
         # Log the updated product
         print("Updated free product:", product)
-        return product 
+        return product
+
+class DiscountProductSerializer(serializers.ModelSerializer):
+    user = serializers.ReadOnlyField(source='user.email')
+    image_url = serializers.SerializerMethodField()
+    discount_percentage = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = DiscountProduct
+        fields = [
+            'id', 'title', 'description', 'category', 'condition',
+            'original_price', 'discount_price', 'discount_percentage',
+            'location', 'image', 'image_url', 'created_at', 
+            'updated_at', 'user', 'is_available'
+        ]
+        read_only_fields = ['user', 'created_at', 'updated_at']
+
+    def get_image_url(self, obj):
+        try:
+            if obj.image:
+                request = self.context.get('request')
+                if request:
+                    return request.build_absolute_uri(obj.image.url)
+                return obj.image.url
+            return None
+        except Exception as e:
+            print(f"Error getting image URL: {str(e)}")
+            return None
+
+    def get_discount_percentage(self, obj):
+        try:
+            if obj.original_price and obj.discount_price:
+                discount = ((obj.original_price - obj.discount_price) / obj.original_price) * 100
+                return round(discount, 1)
+            return 0
+        except Exception as e:
+            print(f"Error calculating discount percentage: {str(e)}")
+            return 0
+
+    def to_representation(self, instance):
+        try:
+            data = super().to_representation(instance)
+            # Ensure image_url is always a string or null
+            if data.get('image_url') is None:
+                data['image_url'] = None
+            return data
+        except Exception as e:
+            print(f"Error in to_representation: {str(e)}")
+            raise
+
+    def validate(self, data):
+        try:
+            # Log the validation data
+            print("Validating discount product data:", data)
+            
+            # Validate required fields
+            required_fields = ['title', 'description', 'category', 'condition', 'location', 'original_price', 'discount_price']
+            for field in required_fields:
+                if not data.get(field):
+                    raise serializers.ValidationError(f"{field} is required")
+            
+            # Validate discount price is less than original price
+            if data.get('discount_price') and data.get('original_price'):
+                if data['discount_price'] >= data['original_price']:
+                    raise serializers.ValidationError("Discount price must be less than original price")
+            
+            return data
+        except Exception as e:
+            print(f"Error in validation: {str(e)}")
+            raise
+
+    def create(self, validated_data):
+        try:
+            # Log the creation data
+            print("Creating discount product with data:", validated_data)
+            
+            # Ensure is_available is True for new products
+            validated_data['is_available'] = True
+            
+            # Create the product
+            product = super().create(validated_data)
+            
+            # Log the created product
+            print("Created discount product:", product)
+            return product
+        except Exception as e:
+            print(f"Error in create: {str(e)}")
+            raise
+
+    def update(self, instance, validated_data):
+        try:
+            # Log the update data
+            print("Updating discount product with data:", validated_data)
+            
+            # Update the product
+            product = super().update(instance, validated_data)
+            
+            # Log the updated product
+            print("Updated discount product:", product)
+            return product
+        except Exception as e:
+            print(f"Error in update: {str(e)}")
+            raise 

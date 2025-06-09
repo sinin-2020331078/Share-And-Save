@@ -146,6 +146,16 @@ FOOD_IMAGES_DIR = os.path.join(MEDIA_ROOT, 'food_images')
 if not os.path.exists(FOOD_IMAGES_DIR):
     os.makedirs(FOOD_IMAGES_DIR)
 
+# Create free_products directory if it doesn't exist
+FREE_PRODUCTS_DIR = os.path.join(MEDIA_ROOT, 'free_products')
+if not os.path.exists(FREE_PRODUCTS_DIR):
+    os.makedirs(FREE_PRODUCTS_DIR)
+
+# Create discount_products directory if it doesn't exist
+DISCOUNT_PRODUCTS_DIR = os.path.join(MEDIA_ROOT, 'discount_products')
+if not os.path.exists(DISCOUNT_PRODUCTS_DIR):
+    os.makedirs(DISCOUNT_PRODUCTS_DIR)
+
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",

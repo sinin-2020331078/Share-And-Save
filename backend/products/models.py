@@ -12,6 +12,10 @@ def free_product_image_path(instance, filename):
     # Generate a unique path for each free product image
     return f'free_products/{instance.user.id}/{filename}'
 
+def discount_product_image_path(instance, filename):
+    # Generate a unique path for each discount product image
+    return f'discount_products/{instance.user.id}/{filename}'
+
 class FoodItem(models.Model):
     CATEGORY_CHOICES = [
         ('vegetables', 'Vegetables'),
@@ -90,6 +94,56 @@ class FreeProduct(models.Model):
 
     def __str__(self):
         return self.title
+
+    class Meta:
+        ordering = ['-created_at']
+
+class DiscountProduct(models.Model):
+    CATEGORY_CHOICES = [
+        ('electronics', 'Electronics'),
+        ('clothing', 'Clothing'),
+        ('furniture', 'Furniture'),
+        ('books', 'Books'),
+        ('toys', 'Toys'),
+        ('sports', 'Sports & Outdoors'),
+        ('home', 'Home & Garden'),
+        ('other', 'Other'),
+    ]
+
+    CONDITION_CHOICES = [
+        ('new', 'New'),
+        ('like_new', 'Like New'),
+        ('good', 'Good'),
+        ('fair', 'Fair'),
+        ('poor', 'Poor'),
+    ]
+
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
+    condition = models.CharField(max_length=20, choices=CONDITION_CHOICES)
+    original_price = models.DecimalField(max_digits=10, decimal_places=2)
+    discount_price = models.DecimalField(max_digits=10, decimal_places=2)
+    location = models.CharField(max_length=200)
+    image = models.ImageField(
+        upload_to=discount_product_image_path,
+        validators=[FileExtensionValidator(allowed_extensions=['jpg', 'jpeg', 'png', 'gif'])],
+        null=True,
+        blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='discount_products')
+    is_available = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        # Ensure discount price is less than original price
+        if self.discount_price >= self.original_price:
+            raise ValueError("Discount price must be less than original price")
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ['-created_at'] 
