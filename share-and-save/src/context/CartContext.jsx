@@ -6,43 +6,83 @@ export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [total, setTotal] = useState(0);
 
+  // Helper function to create a unique cart item ID
+  const createCartItemId = (item) => {
+    // Determine the product type based on the item properties
+    let productType = 'unknown';
+    if (item.is_free) {
+      productType = 'free';
+    } else if (item.discount_price) {
+      productType = 'discount';
+    } else if (item.expiry_date) {
+      productType = 'food';
+    }
+    return `${productType}_${item.id}`;
+  };
+
   useEffect(() => {
     // Load cart items from localStorage on initial load
     const savedCart = localStorage.getItem('cart');
     if (savedCart) {
-      setCartItems(JSON.parse(savedCart));
+      try {
+        const parsedCart = JSON.parse(savedCart);
+        setCartItems(Array.isArray(parsedCart) ? parsedCart : []);
+      } catch (error) {
+        console.error('Error parsing cart from localStorage:', error);
+        setCartItems([]);
+      }
     }
   }, []);
 
   useEffect(() => {
     // Save cart items to localStorage whenever they change
-    localStorage.setItem('cart', JSON.stringify(cartItems));
-    // Calculate total
-    const newTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    setTotal(newTotal);
+    try {
+      localStorage.setItem('cart', JSON.stringify(cartItems));
+      // Calculate total
+      const newTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      setTotal(newTotal);
+    } catch (error) {
+      console.error('Error saving cart to localStorage:', error);
+    }
   }, [cartItems]);
 
   const addToCart = (item) => {
+    if (!item || !item.id) {
+      console.error('Invalid item added to cart:', item);
+      return;
+    }
+
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(i => i.id === item.id);
-      if (existingItem) {
-        return prevItems.map(i =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-        );
+      // Create a unique cart item ID that includes the product type
+      const cartItemId = createCartItemId(item);
+      
+      // Check if item already exists in cart using the unique ID
+      const existingItemIndex = prevItems.findIndex(i => createCartItemId(i) === cartItemId);
+      
+      if (existingItemIndex !== -1) {
+        // Item exists, update its quantity
+        const updatedItems = [...prevItems];
+        updatedItems[existingItemIndex] = {
+          ...updatedItems[existingItemIndex],
+          quantity: updatedItems[existingItemIndex].quantity + 1
+        };
+        return updatedItems;
+      } else {
+        // Item doesn't exist, add it as new
+        return [...prevItems, { ...item, quantity: 1 }];
       }
-      return [...prevItems, { ...item, quantity: 1 }];
     });
   };
 
   const removeFromCart = (itemId) => {
-    setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+    setCartItems(prevItems => prevItems.filter(item => createCartItemId(item) !== itemId));
   };
 
   const updateQuantity = (itemId, quantity) => {
     if (quantity < 1) return;
     setCartItems(prevItems =>
       prevItems.map(item =>
-        item.id === itemId ? { ...item, quantity } : item
+        createCartItemId(item) === itemId ? { ...item, quantity } : item
       )
     );
   };
