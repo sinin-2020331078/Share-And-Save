@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { MagnifyingGlassIcon, PlusIcon, MapPinIcon, CurrencyDollarIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { useCart } from '../context/CartContext';
 
 const DiscountProducts = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const DiscountProducts = () => {
   const [products, setProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { addToCart } = useCart();
 
   useEffect(() => {
     fetchProducts();
@@ -72,8 +74,25 @@ const DiscountProducts = () => {
     }
 
     try {
-      // TODO: Implement add to cart functionality
-      console.log('Adding to cart:', productId);
+      const product = products.find(p => p.id === productId);
+      if (!product) {
+        console.error('Product not found:', productId);
+        return;
+      }
+
+      addToCart({
+        id: product.id,
+        title: product.title,
+        description: product.description,
+        image: product.image_url,
+        category: product.category,
+        condition: product.condition,
+        location: product.location,
+        price: product.discount_price,
+        original_price: product.original_price,
+        discount_percentage: product.discount_percentage,
+        type: 'discount'
+      });
     } catch (error) {
       console.error('Error adding to cart:', error);
     }

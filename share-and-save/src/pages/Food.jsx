@@ -60,7 +60,17 @@ const Food = () => {
       window.location.href = '/login';
       return;
     }
-    addToCart(item);
+    addToCart({
+      id: item.id,
+      title: item.title,
+      description: item.description,
+      image: item.image_url,
+      category: item.category,
+      location: item.location,
+      price: item.is_free ? 0 : item.price,
+      expiry_date: item.expiry_date,
+      type: 'food'
+    });
   };
 
   if (loading) {

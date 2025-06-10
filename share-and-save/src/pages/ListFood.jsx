@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 
 const ListFood = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -62,7 +62,6 @@ const ListFood = () => {
     setLoading(true);
 
     try {
-      const token = localStorage.getItem('access_token');
       if (!token) {
         navigate('/login');
         return;

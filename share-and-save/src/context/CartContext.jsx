@@ -8,14 +8,16 @@ export const CartProvider = ({ children }) => {
 
   // Helper function to create a unique cart item ID
   const createCartItemId = (item) => {
-    // Determine the product type based on the item properties
-    let productType = 'unknown';
-    if (item.is_free) {
-      productType = 'free';
-    } else if (item.discount_price) {
-      productType = 'discount';
-    } else if (item.expiry_date) {
-      productType = 'food';
+    // Use the explicit type field if available, otherwise fallback to property-based detection
+    let productType = item.type || 'unknown';
+    if (productType === 'unknown') {
+      if (item.is_free) {
+        productType = 'free';
+      } else if (item.discount_price) {
+        productType = 'discount';
+      } else if (item.expiry_date) {
+        productType = 'food';
+      }
     }
     return `${productType}_${item.id}`;
   };
