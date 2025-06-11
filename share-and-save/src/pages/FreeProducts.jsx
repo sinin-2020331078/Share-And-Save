@@ -155,7 +155,8 @@ const FreeProducts = () => {
       category: product.category,
       condition: product.condition,
       location: product.location,
-      type: 'free'
+      type: 'free',
+      price: 0
     });
   };
 

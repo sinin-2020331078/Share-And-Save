@@ -73,6 +73,15 @@ const Food = () => {
     });
   };
 
+  const handleContactSeller = (item) => {
+    if (!user) {
+      window.location.href = '/login';
+      return;
+    }
+    // TODO: Implement contact seller functionality
+    alert('Contact seller functionality will be implemented soon!');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -186,14 +195,22 @@ const Food = () => {
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-bold text-orange-600">
-                    {item.is_free ? 'Free' : `$${item.price}`}
+                    {item.is_free ? 'Free' : `${item.price} taka`}
                   </span>
-                  <button
-                    onClick={() => handleAddToCart(item)}
-                    className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
-                  >
-                    Add to Cart
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleAddToCart(item)}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                    >
+                      Add to Cart
+                    </button>
+                    <button
+                      onClick={() => handleContactSeller(item)}
+                      className="px-4 py-2 bg-gray-100 text-gray-800 rounded-lg hover:bg-gray-200"
+                    >
+                      Contact Seller
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

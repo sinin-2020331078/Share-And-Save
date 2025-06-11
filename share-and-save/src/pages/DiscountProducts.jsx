@@ -167,11 +167,11 @@ const DiscountProducts = () => {
               onChange={e => setPriceRange(e.target.value)}
             >
               <option value="">Any Price</option>
-              <option value="0-50">Under $50</option>
-              <option value="50-100">$50 - $100</option>
-              <option value="100-500">$100 - $500</option>
-              <option value="500-1000">$500 - $1000</option>
-              <option value="1000-">$1000+</option>
+              <option value="0-50">Under 50 taka</option>
+              <option value="50-100">50 - 100 taka</option>
+              <option value="100-500">100 - 500 taka</option>
+              <option value="500-1000">500 - 1000 taka</option>
+              <option value="1000-">1000+ taka</option>
             </select>
             <button 
               onClick={fetchProducts}
@@ -224,8 +224,8 @@ const DiscountProducts = () => {
                     </span>
                     <span className="flex items-center text-gray-500 text-sm">
                       <CurrencyDollarIcon className="w-4 h-4 mr-1" />
-                      <span className="line-through text-gray-400 mr-2">${product.original_price}</span>
-                      <span className="text-green-600 font-bold">${product.discount_price}</span>
+                      <span className="line-through text-gray-400 mr-2">{product.original_price} taka</span>
+                      <span className="text-green-600 font-bold">{product.discount_price} taka</span>
                     </span>
                   </div>
                   <div className="flex gap-2">

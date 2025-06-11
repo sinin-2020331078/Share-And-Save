@@ -27,6 +27,8 @@ import LandingPage from './pages/LandingPage';
 // Import AuthProvider and CartProvider
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // New component to handle conditional Navbar rendering and routes
 const AppContent = () => {
@@ -83,6 +85,18 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <AppContent />
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
         </CartProvider>
       </AuthProvider>
     </Router>

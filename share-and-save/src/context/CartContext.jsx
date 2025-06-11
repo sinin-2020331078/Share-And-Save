@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 
 const CartContext = createContext(null);
 
@@ -49,47 +50,63 @@ export const CartProvider = ({ children }) => {
   }, [cartItems]);
 
   const addToCart = (item) => {
-    if (!item || !item.id) {
-      console.error('Invalid item added to cart:', item);
-      return;
-    }
-
+    const cartItemId = createCartItemId(item);
     setCartItems(prevItems => {
-      // Create a unique cart item ID that includes the product type
-      const cartItemId = createCartItemId(item);
-      
-      // Check if item already exists in cart using the unique ID
-      const existingItemIndex = prevItems.findIndex(i => createCartItemId(i) === cartItemId);
-      
-      if (existingItemIndex !== -1) {
-        // Item exists, update its quantity
-        const updatedItems = [...prevItems];
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity: updatedItems[existingItemIndex].quantity + 1
-        };
-        return updatedItems;
-      } else {
-        // Item doesn't exist, add it as new
-        return [...prevItems, { ...item, quantity: 1 }];
+      const existingItem = prevItems.find(i => createCartItemId(i) === cartItemId);
+      if (existingItem) {
+        toast.info(`${item.title} quantity updated in cart!`, {
+          position: "top-right",
+          autoClose: 2000,
+        });
+        return prevItems.map(i => 
+          createCartItemId(i) === cartItemId 
+            ? { ...i, quantity: i.quantity + 1 }
+            : i
+        );
       }
+      // Set price to 0 for free products
+      const price = item.type === 'free' ? 0 : item.price;
+      toast.success(`${item.title} added to cart!`, {
+        position: "top-right",
+        autoClose: 2000,
+      });
+      return [...prevItems, { ...item, price, quantity: 1 }];
     });
   };
 
   const removeFromCart = (itemId) => {
+    const item = cartItems.find(i => createCartItemId(i) === itemId);
+    if (item) {
+      toast.info(`${item.title} removed from cart!`, {
+        position: "top-right",
+        autoClose: 2000,
+      });
+    }
     setCartItems(prevItems => prevItems.filter(item => createCartItemId(item) !== itemId));
   };
 
   const updateQuantity = (itemId, quantity) => {
     if (quantity < 1) return;
-    setCartItems(prevItems =>
-      prevItems.map(item =>
+    setCartItems(prevItems => {
+      const updatedItems = prevItems.map(item =>
         createCartItemId(item) === itemId ? { ...item, quantity } : item
-      )
-    );
+      );
+      const updatedItem = updatedItems.find(item => createCartItemId(item) === itemId);
+      if (updatedItem) {
+        toast.info(`${updatedItem.title} quantity updated to ${quantity}!`, {
+          position: "top-right",
+          autoClose: 2000,
+        });
+      }
+      return updatedItems;
+    });
   };
 
   const clearCart = () => {
+    toast.info("Cart cleared!", {
+      position: "top-right",
+      autoClose: 2000,
+    });
     setCartItems([]);
   };
 

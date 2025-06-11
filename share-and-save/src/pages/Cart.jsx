@@ -72,28 +72,28 @@ const Cart = () => {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-800">{item.title}</h3>
-                    <p className="text-gray-600">${item.price}</p>
+                    <p className="text-gray-600">{item.price} taka</p>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      onClick={() => updateQuantity(`${item.type}_${item.id}`, item.quantity - 1)}
                       className="p-1 text-gray-500 hover:text-orange-500"
                     >
                       <FaMinus />
                     </button>
                     <span className="w-8 text-center">{item.quantity}</span>
                     <button
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      onClick={() => updateQuantity(`${item.type}_${item.id}`, item.quantity + 1)}
                       className="p-1 text-gray-500 hover:text-orange-500"
                     >
                       <FaPlus />
                     </button>
                   </div>
                   <button
-                    onClick={() => removeFromCart(item.id)}
+                    onClick={() => removeFromCart(`${item.type}_${item.id}`)}
                     className="text-red-500 hover:text-red-600 p-2"
                   >
                     <FaTrash />
@@ -106,7 +106,7 @@ const Cart = () => {
           <div className="mt-8 border-t pt-6">
             <div className="flex justify-between items-center mb-6">
               <span className="text-lg font-semibold text-gray-800">Total:</span>
-              <span className="text-2xl font-bold text-orange-500">${total.toFixed(2)}</span>
+              <span className="text-2xl font-bold text-orange-500">{total.toFixed(2)} taka</span>
             </div>
             <div className="flex justify-end space-x-4">
               <button

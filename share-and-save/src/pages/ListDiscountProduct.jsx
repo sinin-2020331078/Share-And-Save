@@ -159,7 +159,7 @@ const ListDiscountProduct = () => {
             {/* Original Price */}
             <div>
               <label htmlFor="original_price" className="block text-sm font-medium text-gray-700 mb-1">
-                Original Price ($)
+                Original Price (taka)
               </label>
               <input
                 type="number"
@@ -177,7 +177,7 @@ const ListDiscountProduct = () => {
             {/* Discount Price */}
             <div>
               <label htmlFor="discount_price" className="block text-sm font-medium text-gray-700 mb-1">
-                Discount Price ($)
+                Discount Price (taka)
               </label>
               <input
                 type="number"
