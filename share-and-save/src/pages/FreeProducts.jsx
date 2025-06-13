@@ -188,8 +188,12 @@ const FreeProducts = () => {
       setShowAuthModal(true);
       return;
     }
-    // TODO: Implement contact seller functionality
-    console.log('Contact seller for product:', product);
+    // Navigate to the community page with the seller's user ID
+    if (product.user && product.user.id) {
+      navigate('/community', { state: { userId: product.user.id } });
+    } else {
+      alert('Seller information not available.');
+    }
   };
 
   const handleDelete = async (productId) => {

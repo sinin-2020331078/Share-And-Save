@@ -133,14 +133,17 @@ const DiscountProducts = () => {
     }
   };
 
-  const handleContactSeller = (productId) => {
+  const handleContactSeller = (product) => {
     if (!isAuthenticated) {
       setShowAuthModal(true);
       return;
     }
-
-    // TODO: Implement contact seller functionality
-    console.log('Contacting seller for product:', productId);
+    // Navigate to the community page with the seller's user ID
+    if (product.user_id) {
+      navigate('/community', { state: { userId: product.user_id } });
+    } else {
+      alert('Seller information not available.');
+    }
   };
 
   const handleDelete = async (productId) => {
@@ -303,7 +306,7 @@ const DiscountProducts = () => {
                     </button>
                     <div className="flex gap-2">
                       <button 
-                        onClick={() => handleContactSeller(product.id)}
+                        onClick={() => handleContactSeller(product)}
                         className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 rounded-lg transition-colors"
                       >
                         Contact Seller

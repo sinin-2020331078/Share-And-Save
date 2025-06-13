@@ -3,6 +3,7 @@ from .models import FoodItem, FreeProduct, DiscountProduct, CartItem
 
 class FoodItemSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.email')
+    user_id = serializers.ReadOnlyField(source='user.id')
     image_url = serializers.SerializerMethodField()
     
     class Meta:
@@ -10,9 +11,9 @@ class FoodItemSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 'category', 'price',
             'is_free', 'location', 'expiry_date', 'image',
-            'image_url', 'created_at', 'updated_at', 'user'
+            'image_url', 'created_at', 'updated_at', 'user', 'user_id'
         ]
-        read_only_fields = ['user', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'user_id', 'created_at', 'updated_at']
 
     def get_image_url(self, obj):
         if obj.image:
@@ -49,7 +50,7 @@ class FoodItemSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 class FreeProductSerializer(serializers.ModelSerializer):
-    user = serializers.ReadOnlyField(source='user.email')
+    user = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
     
     class Meta:
@@ -60,6 +61,12 @@ class FreeProductSerializer(serializers.ModelSerializer):
             'updated_at', 'user', 'is_available'
         ]
         read_only_fields = ['user', 'created_at', 'updated_at']
+
+    def get_user(self, obj):
+        return {
+            'id': obj.user.id,
+            'email': obj.user.email
+        }
 
     def get_image_url(self, obj):
         if obj.image:
@@ -108,6 +115,7 @@ class FreeProductSerializer(serializers.ModelSerializer):
 
 class DiscountProductSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.email')
+    user_id = serializers.ReadOnlyField(source='user.id')
     image_url = serializers.SerializerMethodField()
     discount_percentage = serializers.SerializerMethodField()
     
@@ -117,9 +125,9 @@ class DiscountProductSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'category', 'condition',
             'original_price', 'discount_price', 'discount_percentage',
             'location', 'image', 'image_url', 'created_at', 
-            'updated_at', 'user', 'is_available'
+            'updated_at', 'user', 'user_id', 'is_available'
         ]
-        read_only_fields = ['user', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'user_id', 'created_at', 'updated_at']
 
     def get_image_url(self, obj):
         try:

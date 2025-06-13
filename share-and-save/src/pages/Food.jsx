@@ -141,19 +141,16 @@ const Food = () => {
   };
 
   const handleContactSeller = (item) => {
-    if (!user) {
-      window.location.href = '/login';
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
       return;
     }
-    // Navigate to the community page with the seller's ID and item details
-    navigate('/community', { 
-      state: { 
-        sellerId: item.user.id,
-        itemTitle: item.title,
-        itemId: item.id,
-        type: 'food'
-      }
-    });
+    // Navigate to the community page with the seller's user ID
+    if (item.user_id) {
+      navigate('/community', { state: { userId: item.user_id } });
+    } else {
+      alert('Seller information not available.');
+    }
   };
 
   if (loading) {

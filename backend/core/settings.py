@@ -13,10 +13,19 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 import os
 from datetime import timedelta
+import atexit
+import threading
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Register cleanup function for threads
+def cleanup_threads():
+    for thread in threading.enumerate():
+        if thread.is_alive() and thread.daemon:
+            thread.join(timeout=1.0)
+
+atexit.register(cleanup_threads)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -47,6 +56,7 @@ INSTALLED_APPS = [
     'products',
     'requests',
     'notifications',
+    'chat',
 ]
 
 MIDDLEWARE = [
