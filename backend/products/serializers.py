@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import FoodItem, FreeProduct, DiscountProduct
+from .models import FoodItem, FreeProduct, DiscountProduct, CartItem
 
 class FoodItemSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.email')
@@ -29,16 +29,21 @@ class FoodItemSerializer(serializers.ModelSerializer):
         if data.get('is_free') and data.get('price'):
             raise serializers.ValidationError("Price should not be set for free items")
         
+        # Ensure price is an integer
+        if data.get('price') is not None:
+            try:
+                data['price'] = int(data['price'])
+            except (ValueError, TypeError):
+                raise serializers.ValidationError("Price must be a whole number")
+        
         return data
 
     def create(self, validated_data):
-        # Ensure price is None for free items
         if validated_data.get('is_free'):
             validated_data['price'] = None
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        # Ensure price is None for free items
         if validated_data.get('is_free'):
             validated_data['price'] = None
         return super().update(instance, validated_data)
@@ -151,9 +156,12 @@ class DiscountProductSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         try:
-            # Log the validation data
-            print("Validating discount product data:", data)
-            
+            # Convert prices to integers
+            if 'original_price' in data:
+                data['original_price'] = int(data['original_price'])
+            if 'discount_price' in data:
+                data['discount_price'] = int(data['discount_price'])
+
             # Validate required fields
             required_fields = ['title', 'description', 'category', 'condition', 'location', 'original_price', 'discount_price']
             for field in required_fields:
@@ -166,24 +174,16 @@ class DiscountProductSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError("Discount price must be less than original price")
             
             return data
+        except ValueError:
+            raise serializers.ValidationError("Prices must be whole numbers")
         except Exception as e:
             print(f"Error in validation: {str(e)}")
             raise
 
     def create(self, validated_data):
         try:
-            # Log the creation data
-            print("Creating discount product with data:", validated_data)
-            
-            # Ensure is_available is True for new products
             validated_data['is_available'] = True
-            
-            # Create the product
-            product = super().create(validated_data)
-            
-            # Log the created product
-            print("Created discount product:", product)
-            return product
+            return super().create(validated_data)
         except Exception as e:
             print(f"Error in create: {str(e)}")
             raise
@@ -201,4 +201,27 @@ class DiscountProductSerializer(serializers.ModelSerializer):
             return product
         except Exception as e:
             print(f"Error in update: {str(e)}")
-            raise 
+            raise
+
+class CartItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CartItem
+        fields = [
+            'id', 'item_type', 'item_id', 'title', 'description',
+            'price', 'quantity', 'image_url', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['created_at', 'updated_at']
+
+    def validate(self, data):
+        # Ensure price is an integer
+        if data.get('price') is not None:
+            try:
+                data['price'] = int(data['price'])
+            except (ValueError, TypeError):
+                raise serializers.ValidationError("Price must be a whole number")
+        
+        # Ensure quantity is positive
+        if data.get('quantity', 1) < 1:
+            raise serializers.ValidationError("Quantity must be at least 1")
+        
+        return data 

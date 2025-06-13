@@ -23,9 +23,14 @@ const ListFood = () => {
   const [imagePreview, setImagePreview] = useState(null);
 
   const handleChange = (e) => {
-    const { name, value, files, type, checked } = e.target;
+    const { name, value, type, checked, files } = e.target;
     
-    if (type === 'file' && files && files[0]) {
+    if (type === 'checkbox') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: checked
+      }));
+    } else if (type === 'file') {
       const file = files[0];
       // Validate file type
       if (!file.type.match('image.*')) {
@@ -47,10 +52,19 @@ const ListFood = () => {
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
+    } else if (name === 'price') {
+      // Handle price input as integer only
+      const intValue = value === '' ? '' : Math.floor(Number(value));
+      if (!isNaN(intValue) && intValue >= 0) {
+        setFormData(prev => ({
+          ...prev,
+          [name]: intValue
+        }));
+      }
     } else {
       setFormData(prev => ({
         ...prev,
-        [name]: type === 'checkbox' ? checked : value
+        [name]: value
       }));
     }
   };
@@ -78,6 +92,13 @@ const ListFood = () => {
       // Validate price for non-free items
       if (!formData.is_free && !formData.price) {
         setError('Please enter a price for non-free items');
+        setLoading(false);
+        return;
+      }
+
+      // Ensure price is a non-negative integer
+      if (!formData.is_free && (formData.price < 0 || !Number.isInteger(formData.price))) {
+        setError('Price must be a non-negative whole number');
         setLoading(false);
         return;
       }
@@ -244,7 +265,7 @@ const ListFood = () => {
                     value={formData.price}
                     onChange={handleChange}
                     min="0"
-                    step="0.01"
+                    step="1"
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                     required={!formData.is_free}
                   />

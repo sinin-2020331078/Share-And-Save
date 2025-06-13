@@ -10,11 +10,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(source='user.first_name')
     last_name = serializers.CharField(source='user.last_name')
     profile_picture_url = serializers.SerializerMethodField()
+    user_id = serializers.ReadOnlyField(source='user.id')
 
     class Meta:
         model = UserProfile
         fields = ['email', 'first_name', 'last_name', 'phone_number', 'address', 
-                 'profile_picture', 'profile_picture_url', 'bio', 'created_at', 'updated_at']
+                 'profile_picture', 'profile_picture_url', 'bio', 'created_at', 'updated_at', 'user_id']
         read_only_fields = ['created_at', 'updated_at']
 
     def get_profile_picture_url(self, obj):
@@ -26,6 +27,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         data = super().to_representation(instance)
         # Flatten the data structure
         return {
+            'user_id': instance.user.id,
             'email': data['email'],
             'first_name': data['first_name'],
             'last_name': data['last_name'],

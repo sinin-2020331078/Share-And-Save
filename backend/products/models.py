@@ -30,7 +30,7 @@ class FoodItem(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
-    price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    price = models.IntegerField(null=True, blank=True)
     is_free = models.BooleanField(default=False)
     location = models.CharField(max_length=200)
     expiry_date = models.DateField()
@@ -122,8 +122,8 @@ class DiscountProduct(models.Model):
     description = models.TextField()
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES)
     condition = models.CharField(max_length=20, choices=CONDITION_CHOICES)
-    original_price = models.DecimalField(max_digits=10, decimal_places=2)
-    discount_price = models.DecimalField(max_digits=10, decimal_places=2)
+    original_price = models.IntegerField()
+    discount_price = models.IntegerField()
     location = models.CharField(max_length=200)
     image = models.ImageField(
         upload_to=discount_product_image_path,
@@ -146,4 +146,23 @@ class DiscountProduct(models.Model):
         super().save(*args, **kwargs)
 
     class Meta:
-        ordering = ['-created_at'] 
+        ordering = ['-created_at']
+
+class CartItem(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cart_items')
+    item_type = models.CharField(max_length=20)  # 'food', 'free', 'discount'
+    item_id = models.IntegerField()
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    price = models.IntegerField()
+    quantity = models.IntegerField(default=1)
+    image_url = models.URLField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'item_type', 'item_id')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.email}'s cart - {self.title}" 

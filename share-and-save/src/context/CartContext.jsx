@@ -1,113 +1,159 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import axios from 'axios';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [total, setTotal] = useState(0);
+  const { token, isAuthenticated } = useAuth();
 
   // Helper function to create a unique cart item ID
   const createCartItemId = (item) => {
-    // Use the explicit type field if available, otherwise fallback to property-based detection
-    let productType = item.type || 'unknown';
-    if (productType === 'unknown') {
-      if (item.is_free) {
-        productType = 'free';
-      } else if (item.discount_price) {
-        productType = 'discount';
-      } else if (item.expiry_date) {
-        productType = 'food';
-      }
+    return `${item.item_type}_${item.item_id}`;
+  };
+
+  // Fetch cart items from the backend
+  const fetchCartItems = async () => {
+    if (!isAuthenticated || !token) return;
+
+    try {
+      const response = await axios.get('http://localhost:8000/api/cart/', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setCartItems(response.data);
+    } catch (error) {
+      console.error('Error fetching cart items:', error);
     }
-    return `${productType}_${item.id}`;
   };
 
   useEffect(() => {
-    // Load cart items from localStorage on initial load
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      try {
-        const parsedCart = JSON.parse(savedCart);
-        setCartItems(Array.isArray(parsedCart) ? parsedCart : []);
-      } catch (error) {
-        console.error('Error parsing cart from localStorage:', error);
-        setCartItems([]);
-      }
-    }
-  }, []);
+    fetchCartItems();
+  }, [isAuthenticated, token]);
 
   useEffect(() => {
-    // Save cart items to localStorage whenever they change
-    try {
-      localStorage.setItem('cart', JSON.stringify(cartItems));
-      // Calculate total
-      const newTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      setTotal(newTotal);
-    } catch (error) {
-      console.error('Error saving cart to localStorage:', error);
-    }
+    // Calculate total whenever cart items change
+    const newTotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    setTotal(newTotal);
   }, [cartItems]);
 
-  const addToCart = (item) => {
-    const cartItemId = createCartItemId(item);
-    setCartItems(prevItems => {
-      const existingItem = prevItems.find(i => createCartItemId(i) === cartItemId);
-      if (existingItem) {
-        toast.info(`${item.title} quantity updated in cart!`, {
-          position: "top-right",
-          autoClose: 2000,
-        });
-        return prevItems.map(i => 
-          createCartItemId(i) === cartItemId 
-            ? { ...i, quantity: i.quantity + 1 }
-            : i
-        );
-      }
-      // Set price to 0 for free products
-      const price = item.type === 'free' ? 0 : item.price;
-      toast.success(`${item.title} added to cart!`, {
-        position: "top-right",
-        autoClose: 2000,
-      });
-      return [...prevItems, { ...item, price, quantity: 1 }];
-    });
-  };
-
-  const removeFromCart = (itemId) => {
-    const item = cartItems.find(i => createCartItemId(i) === itemId);
-    if (item) {
-      toast.info(`${item.title} removed from cart!`, {
-        position: "top-right",
-        autoClose: 2000,
-      });
+  const addToCart = async (item) => {
+    if (!isAuthenticated || !token) {
+      toast.error('Please login to add items to cart');
+      return;
     }
-    setCartItems(prevItems => prevItems.filter(item => createCartItemId(item) !== itemId));
-  };
 
-  const updateQuantity = (itemId, quantity) => {
-    if (quantity < 1) return;
-    setCartItems(prevItems => {
-      const updatedItems = prevItems.map(item =>
-        createCartItemId(item) === itemId ? { ...item, quantity } : item
+    try {
+      const cartItem = {
+        item_type: item.type,
+        item_id: item.id,
+        title: item.title,
+        description: item.description,
+        price: item.price,
+        quantity: 1,
+        image_url: item.image_url || (item.image ? `http://localhost:8000${item.image}` : null)
+      };
+
+      const response = await axios.post(
+        'http://localhost:8000/api/cart/',
+        cartItem,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
       );
-      const updatedItem = updatedItems.find(item => createCartItemId(item) === itemId);
-      if (updatedItem) {
-        toast.info(`${updatedItem.title} quantity updated to ${quantity}!`, {
-          position: "top-right",
-          autoClose: 2000,
-        });
-      }
-      return updatedItems;
-    });
+
+      // Update local state with the response
+      setCartItems(prevItems => {
+        const existingItem = prevItems.find(i => createCartItemId(i) === createCartItemId(response.data));
+        if (existingItem) {
+          return prevItems.map(i => 
+            createCartItemId(i) === createCartItemId(response.data) 
+              ? response.data
+              : i
+          );
+        }
+        return [...prevItems, response.data];
+      });
+
+      toast.success(`${item.title} added to cart!`);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast.error('Failed to add item to cart');
+    }
   };
 
-  const clearCart = () => {
-    toast.info("Cart cleared!", {
-      position: "top-right",
-      autoClose: 2000,
-    });
-    setCartItems([]);
+  const removeFromCart = async (itemId) => {
+    if (!isAuthenticated || !token) return;
+
+    try {
+      await axios.delete(`http://localhost:8000/api/cart/${itemId}/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+      toast.info('Item removed from cart!');
+    } catch (error) {
+      console.error('Error removing from cart:', error);
+      toast.error('Failed to remove item from cart');
+    }
+  };
+
+  const updateQuantity = async (itemId, quantity) => {
+    if (!isAuthenticated || !token || quantity < 1) return;
+
+    try {
+      const response = await axios.patch(
+        `http://localhost:8000/api/cart/${itemId}/`,
+        { quantity },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+
+      setCartItems(prevItems => 
+        prevItems.map(item => 
+          item.id === itemId ? response.data : item
+        )
+      );
+
+      toast.info(`Quantity updated to ${quantity}!`);
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+      toast.error('Failed to update quantity');
+    }
+  };
+
+  const clearCart = async () => {
+    if (!isAuthenticated || !token) return;
+
+    try {
+      // Delete all cart items one by one
+      await Promise.all(
+        cartItems.map(item =>
+          axios.delete(`http://localhost:8000/api/cart/${item.id}/`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+        )
+      );
+
+      setCartItems([]);
+      toast.info('Cart cleared!');
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+      toast.error('Failed to clear cart');
+    }
   };
 
   return (

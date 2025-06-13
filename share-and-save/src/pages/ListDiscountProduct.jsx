@@ -9,6 +9,7 @@ const ListDiscountProduct = () => {
   const { token } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -21,12 +22,44 @@ const ListDiscountProduct = () => {
   });
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
+    const { name, value, type, files } = e.target;
+    
+    if (type === 'file') {
+      const file = files[0];
+      if (file) {
+        // Create a preview URL for the image
+        const previewUrl = URL.createObjectURL(file);
+        setImagePreview(previewUrl);
+        setFormData(prev => ({
+          ...prev,
+          [name]: file
+        }));
+      }
+    } else if (name === 'original_price' || name === 'discount_price') {
+      // Handle price inputs as integers only
+      const intValue = value === '' ? '' : Math.floor(Number(value));
+      if (!isNaN(intValue) && intValue >= 0) {
+        setFormData(prev => ({
+          ...prev,
+          [name]: intValue
+        }));
+      }
+    } else {
     setFormData(prev => ({
       ...prev,
-      [name]: files ? files[0] : value
+        [name]: value
     }));
+    }
   };
+
+  // Clean up the preview URL when component unmounts
+  React.useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,6 +67,13 @@ const ListDiscountProduct = () => {
     setError(null);
 
     try {
+      // Validate prices
+      if (formData.discount_price >= formData.original_price) {
+        setError('Discount price must be less than original price');
+        setIsLoading(false);
+        return;
+      }
+
       // Create FormData object to handle file upload
       const submitData = new FormData();
       Object.keys(formData).forEach(key => {
@@ -168,7 +208,7 @@ const ListDiscountProduct = () => {
                 value={formData.original_price}
                 onChange={handleChange}
                 min="0"
-                step="0.01"
+                step="1"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
@@ -186,7 +226,7 @@ const ListDiscountProduct = () => {
                 value={formData.discount_price}
                 onChange={handleChange}
                 min="0"
-                step="0.01"
+                step="1"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
               />
@@ -208,13 +248,33 @@ const ListDiscountProduct = () => {
               />
             </div>
 
-            {/* Image Upload */}
+            {/* Image Upload with Preview */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Product Image
               </label>
               <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
                 <div className="space-y-1 text-center">
+                  {imagePreview ? (
+                    <div className="relative">
+                      <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="mx-auto h-48 w-auto object-contain rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setImagePreview(null);
+                          setFormData(prev => ({ ...prev, image: null }));
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <>
                   <PhotoIcon className="mx-auto h-12 w-12 text-gray-400" />
                   <div className="flex text-sm text-gray-600">
                     <label
@@ -227,8 +287,8 @@ const ListDiscountProduct = () => {
                         name="image"
                         type="file"
                         accept="image/*"
+                            className="sr-only"
                         onChange={handleChange}
-                        className="sr-only"
                       />
                     </label>
                     <p className="pl-1">or drag and drop</p>
@@ -236,6 +296,8 @@ const ListDiscountProduct = () => {
                   <p className="text-xs text-gray-500">
                     PNG, JPG, GIF up to 10MB
                   </p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

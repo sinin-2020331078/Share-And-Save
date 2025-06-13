@@ -9,6 +9,50 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(null);
 
+  // Add axios interceptor for token refresh
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        
+        // If the error is 401 and we haven't tried to refresh the token yet
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+          
+          try {
+            const refreshToken = localStorage.getItem('refresh_token');
+            if (!refreshToken) {
+              throw new Error('No refresh token available');
+            }
+
+            const response = await axios.post('http://localhost:8000/api/users/token/refresh/', {
+              refresh: refreshToken
+            });
+
+            const { access } = response.data;
+            localStorage.setItem('access_token', access);
+            setToken(access);
+
+            // Update the original request with the new token
+            originalRequest.headers['Authorization'] = `Bearer ${access}`;
+            return axios(originalRequest);
+          } catch (refreshError) {
+            console.error('Token refresh failed:', refreshError);
+            logout();
+            return Promise.reject(refreshError);
+          }
+        }
+        
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, []);
+
   useEffect(() => {
     // Check for tokens in localStorage on initial load
     const accessToken = localStorage.getItem('access_token');
@@ -36,7 +80,9 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data);
     } catch (error) {
       console.error('Error fetching user data:', error);
-      logout();
+      if (error.response?.status === 401) {
+        logout();
+      }
     }
   };
 

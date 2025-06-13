@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MagnifyingGlassIcon, PlusIcon, MapPinIcon, TagIcon } from '@heroicons/react/24/solid';
+import { FaTrash } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import axios from 'axios';
+import debounce from 'lodash/debounce';
 
 const FreeProducts = () => {
   const navigate = useNavigate();
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated, token, user } = useAuth();
   const { addToCart } = useCart();
   const [search, setSearch] = useState('');
+  const [locationSearch, setLocationSearch] = useState('');
   const [category, setCategory] = useState('');
   const [condition, setCondition] = useState('');
   const [products, setProducts] = useState([]);
@@ -17,9 +20,78 @@ const FreeProducts = () => {
   const [error, setError] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+  const fetchProducts = async (searchParams = {}) => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        ...(searchParams.category || category ? { category: searchParams.category || category } : {}),
+        ...(searchParams.condition || condition ? { condition: searchParams.condition || condition } : {}),
+        ...(searchParams.search ? { search: searchParams.search } : {}),
+        ...(searchParams.location ? { location: searchParams.location } : {})
+      });
+
+      const headers = {};
+      if (isAuthenticated && token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await axios.get(
+        `http://localhost:8000/api/free-products/?${params}`,
+        { headers }
+      );
+      setProducts(response.data);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      setError('Failed to fetch products. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Debounced search functions
+  const debouncedSearch = useCallback(
+    debounce((searchTerm) => {
+      fetchProducts({ search: searchTerm });
+    }, 500),
+    [category, condition]
+  );
+
+  const debouncedLocationSearch = useCallback(
+    debounce((locationTerm) => {
+      fetchProducts({ location: locationTerm });
+    }, 500),
+    [category, condition]
+  );
+
+  // Handle search input changes
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearch(value);
+    debouncedSearch(value);
+  };
+
+  const handleLocationSearchChange = (e) => {
+    const value = e.target.value;
+    setLocationSearch(value);
+    debouncedLocationSearch(value);
+  };
+
+  // Handle category and condition changes
+  const handleCategoryChange = (e) => {
+    const value = e.target.value;
+    setCategory(value);
+    fetchProducts({ category: value });
+  };
+
+  const handleConditionChange = (e) => {
+    const value = e.target.value;
+    setCondition(value);
+    fetchProducts({ condition: value });
+  };
+
   useEffect(() => {
     fetchProducts();
-  }, [category, condition, search]);
+  }, []);
 
   // Add a new useEffect to handle navigation
   useEffect(() => {
@@ -33,50 +105,6 @@ const FreeProducts = () => {
     };
   }, []);
 
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams({
-        ...(category && { category }),
-        ...(condition && { condition }),
-        ...(search && { search })
-      });
-
-      console.log('Fetching products with params:', params.toString()); // Debug log
-
-      const headers = {};
-      if (isAuthenticated && token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await axios.get(
-        `http://localhost:8000/api/free-products/?${params}`,
-        { headers }
-      );
-
-      console.log('Received products:', response.data); // Debug log
-      
-      if (Array.isArray(response.data)) {
-        setProducts(response.data);
-        setError('');
-        console.log(`Successfully loaded ${response.data.length} products`);
-      } else {
-        console.error('Invalid response format:', response.data);
-        setError('Invalid response format from server');
-      }
-    } catch (err) {
-      console.error('Error fetching products:', err);
-      if (err.response?.status === 401) {
-        // Token expired or invalid
-        navigate('/login');
-        return;
-      }
-      setError('Failed to load products. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Add a new useEffect to refresh data when component mounts
   useEffect(() => {
     console.log('Component mounted, fetching products');
@@ -87,7 +115,7 @@ const FreeProducts = () => {
   useEffect(() => {
     console.log('Filters changed, fetching products');
     fetchProducts();
-  }, [category, condition, search]);
+  }, [category, condition, search, locationSearch]);
 
   // Add a new useEffect to refresh data when navigating back
   useEffect(() => {
@@ -137,11 +165,6 @@ const FreeProducts = () => {
     }
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    fetchProducts();
-  };
-
   const handleAddToCart = (product) => {
     if (!isAuthenticated) {
       setShowAuthModal(true);
@@ -151,12 +174,12 @@ const FreeProducts = () => {
       id: product.id,
       title: product.title,
       description: product.description,
-      image: product.image_url,
+      image_url: product.image_url || (product.image ? `http://localhost:8000${product.image}` : null),
       category: product.category,
       condition: product.condition,
       location: product.location,
-      type: 'free',
-      price: 0
+      price: 0,
+      type: 'free'
     });
   };
 
@@ -169,13 +192,32 @@ const FreeProducts = () => {
     console.log('Contact seller for product:', product);
   };
 
+  const handleDelete = async (productId) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) {
+      return;
+    }
+
+    try {
+      await axios.delete(`http://localhost:8000/api/free-products/${productId}/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      // Remove the deleted product from the state
+      setProducts(products.filter(product => product.id !== productId));
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert('Failed to delete product. Please try again.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 pb-10">
       {/* Hero Section */}
       <div className="bg-green-600 text-white py-12 mb-8">
         <div className="container mx-auto px-4">
           <h1 className="text-4xl font-bold mb-4">Free Products</h1>
-          <p className="text-lg text-green-100">Find and share items in your community</p>
+          <p className="text-lg text-green-100">Share and find free items in your community</p>
         </div>
       </div>
 
@@ -183,18 +225,28 @@ const FreeProducts = () => {
       <div className="container mx-auto px-4">
         {/* Search and List Button */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <form className="flex-1 flex items-center bg-white rounded-xl shadow-lg px-4 py-3 max-w-xl" onSubmit={handleSearch}>
-            <input
-              type="text"
-              className="flex-1 bg-transparent outline-none text-gray-700 text-lg"
-              placeholder="Search free products..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            <button type="submit" className="text-green-600 hover:text-green-700 p-2 transition-colors">
-              <MagnifyingGlassIcon className="w-6 h-6" />
-            </button>
-          </form>
+          <div className="flex-1 flex flex-col md:flex-row gap-4">
+            <div className="flex-1 flex items-center bg-white rounded-xl shadow-lg px-4 py-3">
+              <input
+                type="text"
+                className="flex-1 bg-transparent outline-none text-gray-700 text-lg"
+                placeholder="Search free products..."
+                value={search}
+                onChange={handleSearchChange}
+              />
+              <MagnifyingGlassIcon className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="flex-1 flex items-center bg-white rounded-xl shadow-lg px-4 py-3">
+              <input
+                type="text"
+                className="flex-1 bg-transparent outline-none text-gray-700 text-lg"
+                placeholder="Search by location..."
+                value={locationSearch}
+                onChange={handleLocationSearchChange}
+              />
+              <MapPinIcon className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
           <button 
             onClick={handleListProduct}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition-all transform hover:scale-105 w-full md:w-auto justify-center"
@@ -210,7 +262,7 @@ const FreeProducts = () => {
             <select 
               className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all" 
               value={category} 
-              onChange={e => setCategory(e.target.value)}
+              onChange={handleCategoryChange}
             >
               <option value="">All Categories</option>
               <option value="electronics">Electronics</option>
@@ -225,7 +277,7 @@ const FreeProducts = () => {
             <select 
               className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all" 
               value={condition} 
-              onChange={e => setCondition(e.target.value)}
+              onChange={handleConditionChange}
             >
               <option value="">All Conditions</option>
               <option value="new">New</option>
@@ -294,12 +346,23 @@ const FreeProducts = () => {
                       >
                         Add to Cart
                       </button>
-                      <button 
-                        onClick={() => handleContactSeller(product)}
-                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 rounded-lg transition-colors"
-                      >
-                        Contact Seller
-                      </button>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => handleContactSeller(product)}
+                          className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-semibold py-3 rounded-lg transition-colors"
+                        >
+                          Contact Seller
+                        </button>
+                        {isAuthenticated && product.user === user?.email && (
+                          <button
+                            onClick={() => handleDelete(product.id)}
+                            className="p-3 text-red-600 hover:text-red-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                            title="Delete product"
+                          >
+                            <FaTrash />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

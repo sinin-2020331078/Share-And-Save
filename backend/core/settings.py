@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'users',
     'products',
     'requests',
+    'notifications',
 ]
 
 MIDDLEWARE = [
@@ -190,3 +191,28 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = '4c4aa822066350'  # Your Mailtrap username
 EMAIL_HOST_PASSWORD = '5fc2ec4c034d02'  # Your Mailtrap password
 DEFAULT_FROM_EMAIL = 'noreply@shareandsave.com'
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'notifications': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}

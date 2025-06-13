@@ -1,15 +1,60 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
-import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes } from 'react-icons/fa';
+import { FaShoppingCart, FaUser, FaSearch, FaBars, FaTimes, FaBell } from 'react-icons/fa';
+import axios from 'axios';
 
 const Navbar = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const { cartItems } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+
+  // Function to check if a link is active
+  const isActive = (path) => {
+    return location.pathname === path;
+  };
+
+  // Function to get link classes based on active state
+  const getLinkClasses = (path) => {
+    const baseClasses = "text-white hover:text-orange-200";
+    const activeClasses = "text-green-300 font-semibold";
+    return `${baseClasses} ${isActive(path) ? activeClasses : ''}`;
+  };
+
+  // Function to get mobile link classes based on active state
+  const getMobileLinkClasses = (path) => {
+    const baseClasses = "block text-white hover:bg-orange-500 px-3 py-2 rounded-md";
+    const activeClasses = "bg-green-600 text-white font-semibold";
+    return `${baseClasses} ${isActive(path) ? activeClasses : ''}`;
+  };
+
+  useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await axios.get('http://localhost:8000/api/notifications/', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const unreadCount = response.data.filter(n => !n.read).length;
+        setUnreadNotifications(unreadCount);
+      } catch (error) {
+        console.error('Error fetching unread notifications:', error);
+      }
+    };
+
+    if (token) {
+      fetchUnreadCount();
+      // Set up polling every minute to check for new notifications
+      const interval = setInterval(fetchUnreadCount, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [token]);
 
   const handleLogout = async () => {
     try {
@@ -49,26 +94,35 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link to="/free-products" className="text-white hover:text-orange-200">
+            <Link to="/free-products" className={getLinkClasses('/free-products')}>
               Free Products
             </Link>
-            <Link to="/discount-products" className="text-white hover:text-orange-200">
+            <Link to="/discount-products" className={getLinkClasses('/discount-products')}>
               Discount Products
             </Link>
-            <Link to="/food" className="text-white hover:text-orange-200">
+            <Link to="/food" className={getLinkClasses('/food')}>
               Food
             </Link>
-            <Link to="/community" className="text-white hover:text-orange-200">
+            <Link to="/community" className={getLinkClasses('/community')}>
               Community
             </Link>
             {user && (
-              <Link to="/request" className="text-white hover:text-orange-200">
+              <Link to="/request" className={getLinkClasses('/request')}>
                 Request
               </Link>
             )}
             {user ? (
               <>
-                <Link to="/cart" className="text-white hover:text-orange-200 flex items-center relative">
+                <Link to="/notifications" className={`${getLinkClasses('/notifications')} flex items-center relative`}>
+                  <FaBell className="mr-1" />
+                  Notifications
+                  {unreadNotifications > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadNotifications}
+                    </span>
+                  )}
+                </Link>
+                <Link to="/cart" className={`${getLinkClasses('/cart')} flex items-center relative`}>
                   <FaShoppingCart className="mr-1" />
                   Cart
                   {cartItemsCount > 0 && (
@@ -77,7 +131,7 @@ const Navbar = () => {
                     </span>
                   )}
                 </Link>
-                <Link to="/profile" className="text-white hover:text-orange-200 flex items-center">
+                <Link to="/profile" className={`${getLinkClasses('/profile')} flex items-center`}>
                   <FaUser className="mr-1" />
                   Profile
                 </Link>
@@ -92,7 +146,7 @@ const Navbar = () => {
               <>
                 <Link
                   to="/login"
-                  className="text-white hover:text-orange-200 px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                  className={`${getLinkClasses('/login')} px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors`}
                 >
                   Login
                 </Link>
@@ -124,32 +178,32 @@ const Navbar = () => {
           <div className="px-2 pt-2 pb-3 space-y-1">
             <Link
               to="/free-products"
-              className="block text-white hover:bg-orange-500 px-3 py-2 rounded-md"
+              className={getMobileLinkClasses('/free-products')}
             >
               Free Products
             </Link>
             <Link
               to="/discount-products"
-              className="block text-white hover:bg-orange-500 px-3 py-2 rounded-md"
+              className={getMobileLinkClasses('/discount-products')}
             >
               Discount Products
             </Link>
             <Link
               to="/food"
-              className="block text-white hover:bg-orange-500 px-3 py-2 rounded-md"
+              className={getMobileLinkClasses('/food')}
             >
               Food
             </Link>
             <Link
               to="/community"
-              className="block text-white hover:bg-orange-500 px-3 py-2 rounded-md"
+              className={getMobileLinkClasses('/community')}
             >
               Community
             </Link>
             {user && (
               <Link
                 to="/request"
-                className="block text-white hover:bg-orange-500 px-3 py-2 rounded-md"
+                className={getMobileLinkClasses('/request')}
               >
                 Request
               </Link>
@@ -157,14 +211,20 @@ const Navbar = () => {
             {user ? (
               <>
                 <Link
+                  to="/notifications"
+                  className={getMobileLinkClasses('/notifications')}
+                >
+                  Notifications {unreadNotifications > 0 && `(${unreadNotifications})`}
+                </Link>
+                <Link
                   to="/cart"
-                  className="block text-white hover:bg-orange-500 px-3 py-2 rounded-md"
+                  className={getMobileLinkClasses('/cart')}
                 >
                   Cart ({cartItemsCount})
                 </Link>
                 <Link
                   to="/profile"
-                  className="block text-white hover:bg-orange-500 px-3 py-2 rounded-md"
+                  className={getMobileLinkClasses('/profile')}
                 >
                   Profile
                 </Link>
@@ -179,13 +239,13 @@ const Navbar = () => {
               <>
                 <Link
                   to="/login"
-                  className="block text-white hover:bg-orange-500 px-3 py-2 rounded-md"
+                  className={getMobileLinkClasses('/login')}
                 >
                   Login
                 </Link>
                 <Link
                   to="/signup"
-                  className="block text-white hover:bg-orange-500 px-3 py-2 rounded-md"
+                  className={getMobileLinkClasses('/signup')}
                 >
                   Sign Up
                 </Link>

@@ -2,8 +2,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser
-from .models import FoodItem, FreeProduct, DiscountProduct
-from .serializers import FoodItemSerializer, FreeProductSerializer, DiscountProductSerializer
+from .models import FoodItem, FreeProduct, DiscountProduct, CartItem
+from .serializers import FoodItemSerializer, FreeProductSerializer, DiscountProductSerializer, CartItemSerializer
 from django.db import models
 import logging
 
@@ -37,6 +37,29 @@ class FoodItemViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            # Check if the user is the owner of the food item
+            if instance.user != request.user:
+                return Response(
+                    {'error': 'You do not have permission to delete this food item'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Delete the associated image file if it exists
+            if instance.image:
+                instance.image.delete(save=False)
+            
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            logger.error(f"Error deleting food item: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
     def get_queryset(self):
         queryset = FoodItem.objects.all()
         
@@ -57,6 +80,11 @@ class FoodItemViewSet(viewsets.ModelViewSet):
                 models.Q(title__icontains=search) |
                 models.Q(description__icontains=search)
             )
+        
+        # Search by location
+        location = self.request.query_params.get('location', None)
+        if location:
+            queryset = queryset.filter(location__icontains=location)
         
         logger.info(f"Filtered queryset count: {queryset.count()}")
         return queryset
@@ -127,6 +155,12 @@ class FreeProductViewSet(viewsets.ModelViewSet):
             )
             logger.info(f"After search filter count: {queryset.count()}")
         
+        # Search by location
+        location = self.request.query_params.get('location', None)
+        if location:
+            queryset = queryset.filter(location__icontains=location)
+            logger.info(f"After location filter count: {queryset.count()}")
+        
         # Log all products in queryset
         logger.info("Products in queryset:")
         for product in queryset:
@@ -180,6 +214,29 @@ class FreeProductViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            # Check if the user is the owner of the product
+            if instance.user != request.user:
+                return Response(
+                    {'error': 'You do not have permission to delete this product'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Delete the associated image file if it exists
+            if instance.image:
+                instance.image.delete(save=False)
+            
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            logger.error(f"Error deleting free product: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 class DiscountProductViewSet(viewsets.ModelViewSet):
     queryset = DiscountProduct.objects.filter(is_available=True)
     serializer_class = DiscountProductSerializer
@@ -225,6 +282,12 @@ class DiscountProductViewSet(viewsets.ModelViewSet):
                     models.Q(description__icontains=search)
                 )
                 logger.info(f"After search filter count: {queryset.count()}")
+            
+            # Search by location
+            location = self.request.query_params.get('location', None)
+            if location:
+                queryset = queryset.filter(location__icontains=location)
+                logger.info(f"After location filter count: {queryset.count()}")
             
             # Log all products in queryset
             logger.info("Products in queryset:")
@@ -323,4 +386,93 @@ class DiscountProductViewSet(viewsets.ModelViewSet):
             return Response(
                 {'error': 'Failed to mark product as unavailable'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            # Check if the user is the owner of the product
+            if instance.user != request.user:
+                return Response(
+                    {'error': 'You do not have permission to delete this product'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Delete the associated image file if it exists
+            if instance.image:
+                instance.image.delete(save=False)
+            
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            logger.error(f"Error deleting discount product: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+class CartItemViewSet(viewsets.ModelViewSet):
+    serializer_class = CartItemSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return CartItem.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        try:
+            # Check if item already exists in cart
+            existing_item = CartItem.objects.filter(
+                user=request.user,
+                item_type=request.data.get('item_type'),
+                item_id=request.data.get('item_id')
+            ).first()
+
+            if existing_item:
+                # Update quantity if item exists
+                existing_item.quantity += int(request.data.get('quantity', 1))
+                existing_item.save()
+                serializer = self.get_serializer(existing_item)
+                return Response(serializer.data)
+
+            return super().create(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error adding item to cart: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def update(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if instance.user != request.user:
+                return Response(
+                    {'error': 'You do not have permission to update this cart item'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            return super().update(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error updating cart item: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            if instance.user != request.user:
+                return Response(
+                    {'error': 'You do not have permission to delete this cart item'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            return super().destroy(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error deleting cart item: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
             ) 

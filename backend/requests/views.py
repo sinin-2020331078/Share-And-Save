@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from .models import Request
 from .serializers import RequestSerializer
 import logging
+from django.db import models
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,33 @@ class RequestViewSet(viewsets.ModelViewSet):
         context['request'] = self.request
         return context
 
+    def get_queryset(self):
+        queryset = Request.objects.all()
+        logger.info(f"Initial queryset count: {queryset.count()}")
+        
+        # Filter by category
+        category = self.request.query_params.get('category', None)
+        if category:
+            queryset = queryset.filter(category=category)
+            logger.info(f"After category filter count: {queryset.count()}")
+        
+        # Search by title or description
+        search = self.request.query_params.get('search', None)
+        if search:
+            queryset = queryset.filter(
+                models.Q(title__icontains=search) |
+                models.Q(description__icontains=search)
+            )
+            logger.info(f"After search filter count: {queryset.count()}")
+        
+        # Search by location
+        location = self.request.query_params.get('location', None)
+        if location:
+            queryset = queryset.filter(location__icontains=location)
+            logger.info(f"After location filter count: {queryset.count()}")
+        
+        return queryset.order_by('-created_at')
+
     def create(self, request, *args, **kwargs):
         try:
             logger.info(f"Creating request with data: {request.data}")
@@ -48,3 +76,24 @@ class RequestViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            # Check if the user is the owner of the request
+            if instance.user != request.user:
+                logger.warning(f"User {request.user.email} attempted to delete request {instance.id} but is not the owner")
+                return Response(
+                    {'error': 'You do not have permission to delete this request'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            logger.info(f"Deleting request {instance.id} by user {request.user.email}")
+            self.perform_destroy(instance)
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            logger.error(f"Error deleting request: {str(e)}")
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )

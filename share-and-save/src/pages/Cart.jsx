@@ -14,9 +14,27 @@ const Cart = () => {
       navigate('/login');
       return;
     }
-    // TODO: Implement checkout process
-    alert('Checkout functionality will be implemented soon!');
+    navigate('/payment');
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="container mx-auto px-4">
+          <div className="bg-white rounded-xl shadow p-8 text-center">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">Please Login</h2>
+            <p className="text-gray-600 mb-6">You need to be logged in to view your cart.</p>
+            <button
+              onClick={() => navigate('/login')}
+              className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+            >
+              Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -60,9 +78,9 @@ const Cart = () => {
               >
                 <div className="flex items-center space-x-4">
                   <div className="w-20 h-20 bg-gray-200 rounded flex items-center justify-center">
-                    {item.image ? (
+                    {item.image_url ? (
                       <img
-                        src={item.image}
+                        src={item.image_url}
                         alt={item.title}
                         className="w-full h-full object-cover rounded"
                       />
@@ -79,21 +97,21 @@ const Cart = () => {
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => updateQuantity(`${item.type}_${item.id}`, item.quantity - 1)}
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
                       className="p-1 text-gray-500 hover:text-orange-500"
                     >
                       <FaMinus />
                     </button>
                     <span className="w-8 text-center">{item.quantity}</span>
                     <button
-                      onClick={() => updateQuantity(`${item.type}_${item.id}`, item.quantity + 1)}
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
                       className="p-1 text-gray-500 hover:text-orange-500"
                     >
                       <FaPlus />
                     </button>
                   </div>
                   <button
-                    onClick={() => removeFromCart(`${item.type}_${item.id}`)}
+                    onClick={() => removeFromCart(item.id)}
                     className="text-red-500 hover:text-red-600 p-2"
                   >
                     <FaTrash />
@@ -106,7 +124,7 @@ const Cart = () => {
           <div className="mt-8 border-t pt-6">
             <div className="flex justify-between items-center mb-6">
               <span className="text-lg font-semibold text-gray-800">Total:</span>
-              <span className="text-2xl font-bold text-orange-500">{total.toFixed(2)} taka</span>
+              <span className="text-2xl font-bold text-orange-500">{total} taka</span>
             </div>
             <div className="flex justify-end space-x-4">
               <button

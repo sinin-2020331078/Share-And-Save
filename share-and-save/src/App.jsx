@@ -23,6 +23,8 @@ import ListFood from './pages/ListFood';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import LandingPage from './pages/LandingPage';
+import Payment from './pages/Payment';
+import Notifications from './pages/Notifications';
 
 // Import AuthProvider and CartProvider
 import { AuthProvider } from './context/AuthContext';
@@ -72,6 +74,8 @@ const AppContent = () => {
             <Route path="/list-free-product" element={<ListFreeProduct />} />
             <Route path="/list-discount-product" element={<ListDiscountProduct />} />
             <Route path="/list-food" element={<ListFood />} />
+            <Route path="/payment" element={<Payment />} />
+            <Route path="/notifications" element={<Notifications />} />
           </Route>
         </Routes>
       </main>
