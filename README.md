@@ -1,5 +1,7 @@
 # Share&Save - A Community-Driven Resource Sharing Platform
 
+![Share and Save](https://images.yourstory.com/cs/5/79900dd0d91311e8a16045a90309d734/sustfeat-1648026643180.jpg?w=1152&fm=auto&ar=2:1&mode=crop&crop=faces)
+
 ## 📌 Overview
 **Share&Save** is a community-driven platform designed to promote sustainability and resource-sharing by enabling users to give away, request, or sell items at minimal costs. Our goal is to reduce waste while fostering an eco-friendly and budget-conscious community.
 
