@@ -315,28 +315,29 @@ const Food = () => {
                       ${item.price}
                     </div>
                   )}
-                  <div className="flex justify-between items-center mb-4">
+                  <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleAddToCart(item)}
                       className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors flex-grow"
                     >
                       Add to Cart
                     </button>
-                    {user && item.user && item.user.id === user.id && (
+                    <button
+                      onClick={() => handleContactSeller(item)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors flex-grow"
+                    >
+                      Contact Seller
+                    </button>
+                    {isAuthenticated && item.user === user?.email && (
                       <button
                         onClick={() => handleDelete(item.id)}
-                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors ml-2"
+                        className="p-3 text-red-600 hover:text-red-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                        title="Delete food item"
                       >
-                        Delete
+                        <FaTrash />
                       </button>
                     )}
                   </div>
-                  <button
-                    onClick={() => handleContactSeller(item)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors w-full"
-                  >
-                    Contact Seller
-                  </button>
                 </div>
               </div>
             ))}

@@ -13,12 +13,13 @@ class UserSerializer(serializers.ModelSerializer):
 
 class RequestSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
+    user_id = serializers.ReadOnlyField(source='user.id')
     time = serializers.SerializerMethodField()
 
     class Meta:
         model = Request
-        fields = ['id', 'user', 'title', 'description', 'category', 'location', 'status', 'created_at', 'time']
-        read_only_fields = ['user', 'status', 'created_at']
+        fields = ['id', 'user', 'user_id', 'title', 'description', 'category', 'location', 'status', 'created_at', 'time']
+        read_only_fields = ['user', 'user_id', 'status', 'created_at']
 
     def get_time(self, obj):
         if not obj.created_at:

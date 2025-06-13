@@ -234,19 +234,16 @@ const Request = () => {
   };
 
   const handleContactRequester = (request) => {
-    if (!user) {
-      window.location.href = '/login';
+    if (!isAuthenticated) {
+      setShowAuthModal(true);
       return;
     }
-    // Navigate to the community page with the requester's ID and request details
-    navigate('/community', { 
-      state: { 
-        requesterId: request.user.id,
-        requestTitle: request.title,
-        requestId: request.id,
-        type: 'request'
-      }
-    });
+    // Navigate to the community page with the requester's user ID
+    if (request.user_id) {
+      navigate('/community', { state: { userId: request.user_id } });
+    } else {
+      alert('Requester information not available.');
+    }
   };
 
   return (

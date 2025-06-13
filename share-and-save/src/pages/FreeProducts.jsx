@@ -189,8 +189,8 @@ const FreeProducts = () => {
       return;
     }
     // Navigate to the community page with the seller's user ID
-    if (product.user && product.user.id) {
-      navigate('/community', { state: { userId: product.user.id } });
+    if (product.user_id) {
+      navigate('/community', { state: { userId: product.user_id } });
     } else {
       alert('Seller information not available.');
     }

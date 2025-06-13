@@ -50,7 +50,8 @@ class FoodItemSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
 class FreeProductSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField()
+    user = serializers.ReadOnlyField(source='user.email')
+    user_id = serializers.ReadOnlyField(source='user.id')
     image_url = serializers.SerializerMethodField()
     
     class Meta:
@@ -58,15 +59,9 @@ class FreeProductSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 'category', 'condition',
             'location', 'image', 'image_url', 'created_at', 
-            'updated_at', 'user', 'is_available'
+            'updated_at', 'user', 'user_id', 'is_available'
         ]
-        read_only_fields = ['user', 'created_at', 'updated_at']
-
-    def get_user(self, obj):
-        return {
-            'id': obj.user.id,
-            'email': obj.user.email
-        }
+        read_only_fields = ['user', 'user_id', 'created_at', 'updated_at']
 
     def get_image_url(self, obj):
         if obj.image:
