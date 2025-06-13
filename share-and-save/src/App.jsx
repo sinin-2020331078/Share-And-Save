@@ -25,6 +25,7 @@ import Login from './pages/Login';
 import LandingPage from './pages/LandingPage';
 import Payment from './pages/Payment';
 import Notifications from './pages/Notifications';
+import AboutPage from './pages/AboutPage';
 
 // Import AuthProvider and CartProvider
 import { AuthProvider } from './context/AuthContext';
@@ -62,6 +63,7 @@ const AppContent = () => {
           <Route path="/discount-products" element={<DiscountProducts />} />
           <Route path="/food" element={<Food />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/about" element={<AboutPage />} />
           <Route path="/cart" element={<Cart />} />
           
           {/* Protected routes - accessible only if authenticated */}
