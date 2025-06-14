@@ -13,8 +13,8 @@
 ## 👥 Team Members
 | ID          | Name                     | Role      |
 |-------------|--------------------------|-----------|
-| 202033056   | Md. Tazbir Hossain Akash | Fullstack |
-| 2020331056  | Ehsanul Haque Sinin      | Fullstack |
+| 2020331056  | Md. Tazbir Hossain Akash | Fullstack |
+| 2020331078  | Ehsanul Haque Sinin      | Fullstack |
 | 2020331106  | Amit Biswas              | Fullstack |
 
 
@@ -24,19 +24,14 @@
 - 💰 **Economic Efficiency**: Enable affordable minimal-cost sales.
 - 🖥️ **User-Friendly Experience**: Intuitive design for seamless interactions.
 
-## ✨ Key Features
-### Core Sections
-1. **Free Products**  
-   - Search & create listings for free items.
-2. **Discount Products**  
-   - List/search affordable items for sale.
-3. **Food Section**  
-   - Share/request perishable goods.
-4. **Community Chat**  
-   - Direct messaging with sellers/buyers.
-5. **Request System**  
-   - Post needs for specific items.
-6. **Shopping Cart**  
-   - Manage selected items before checkout.
-7. **User Accounts**  
-   - Profiles, order history, and preferences.
+## 🚀 Key Features
+
+| Feature Category        | Highlights                                                                |
+|-------------------------|---------------------------------------------------------------------------|
+| **Free Marketplace**    | Search & create listings for items you want to give away                  |
+| **Discount Corner**     | List and discover affordable pre-owned items                              |
+| **Food Sharing**        | Share perishable goods before they go to waste                            |
+| **Community Hub**       | Real-time chat system connecting givers and receivers                     |
+| **Request Board**       | Post needs for specific items you're searching for                        |
+| **Shopping Experience** | Intuitive cart system with seamless checkout process                      |
+| **User Profiles**       | Personalized accounts with transaction history and preferences            |
