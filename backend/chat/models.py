@@ -26,3 +26,18 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender.username} in {self.chat_room}"
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        # Award reputation points for community interaction
+        if is_new:
+            from users.utils import award_reputation_points, get_reputation_points_for_action
+            points = get_reputation_points_for_action('community_interaction')
+            award_reputation_points(
+                user=self.sender,
+                action='community_interaction',
+                points=points,
+                description="Sent a message in community chat"
+            )

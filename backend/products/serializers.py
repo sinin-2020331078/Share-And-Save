@@ -1,9 +1,11 @@
 from rest_framework import serializers
 from .models import FoodItem, FreeProduct, DiscountProduct, CartItem
+from users.serializers import PublicUserSerializer
 
 class FoodItemSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.email')
     user_id = serializers.ReadOnlyField(source='user.id')
+    user_info = PublicUserSerializer(source='user', read_only=True)
     image_url = serializers.SerializerMethodField()
     
     class Meta:
@@ -11,7 +13,7 @@ class FoodItemSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 'category', 'price',
             'is_free', 'location', 'expiry_date', 'image',
-            'image_url', 'created_at', 'updated_at', 'user', 'user_id'
+            'image_url', 'created_at', 'updated_at', 'user', 'user_id', 'user_info'
         ]
         read_only_fields = ['user', 'user_id', 'created_at', 'updated_at']
 
@@ -52,6 +54,7 @@ class FoodItemSerializer(serializers.ModelSerializer):
 class FreeProductSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.email')
     user_id = serializers.ReadOnlyField(source='user.id')
+    user_info = PublicUserSerializer(source='user', read_only=True)
     image_url = serializers.SerializerMethodField()
     
     class Meta:
@@ -59,7 +62,7 @@ class FreeProductSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'description', 'category', 'condition',
             'location', 'image', 'image_url', 'created_at', 
-            'updated_at', 'user', 'user_id', 'is_available'
+            'updated_at', 'user', 'user_id', 'user_info', 'is_available'
         ]
         read_only_fields = ['user', 'user_id', 'created_at', 'updated_at']
 
@@ -111,6 +114,7 @@ class FreeProductSerializer(serializers.ModelSerializer):
 class DiscountProductSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.email')
     user_id = serializers.ReadOnlyField(source='user.id')
+    user_info = PublicUserSerializer(source='user', read_only=True)
     image_url = serializers.SerializerMethodField()
     discount_percentage = serializers.SerializerMethodField()
     
@@ -120,7 +124,7 @@ class DiscountProductSerializer(serializers.ModelSerializer):
             'id', 'title', 'description', 'category', 'condition',
             'original_price', 'discount_price', 'discount_percentage',
             'location', 'image', 'image_url', 'created_at', 
-            'updated_at', 'user', 'user_id', 'is_available'
+            'updated_at', 'user', 'user_id', 'user_info', 'is_available'
         ]
         read_only_fields = ['user', 'user_id', 'created_at', 'updated_at']
 
@@ -227,4 +231,4 @@ class CartItemSerializer(serializers.ModelSerializer):
         if data.get('quantity', 1) < 1:
             raise serializers.ValidationError("Quantity must be at least 1")
         
-        return data 
+        return data

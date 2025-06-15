@@ -2,6 +2,8 @@ from django.shortcuts import render
 from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.decorators import action
+from rest_framework import viewsets
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.utils import timezone
@@ -15,9 +17,12 @@ from .serializers import (
     UserLoginSerializer,
     UserSerializer,
     EmailVerificationSerializer,
-    UserProfileSerializer
+    UserProfileSerializer,
+    ReputationHistorySerializer,
+    PublicUserSerializer
 )
-from .models import User, UserProfile
+from .models import User, UserProfile, ReputationHistory
+from .utils import award_reputation_points, calculate_user_trust_score
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 from rest_framework.decorators import api_view, permission_classes
@@ -118,3 +123,43 @@ class EmailVerificationView(generics.CreateAPIView):
             return Response({
                 'error': 'Invalid verification token.'
             }, status=status.HTTP_400_BAD_REQUEST)
+
+class ReputationViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [IsAuthenticated]
+    serializer_class = ReputationHistorySerializer
+    
+    def get_queryset(self):
+        return ReputationHistory.objects.filter(user=self.request.user)
+    
+    @action(detail=False, methods=['get'])
+    def summary(self, request):
+        """Get reputation summary for the current user"""
+        user = request.user
+        trust_score = calculate_user_trust_score(user)
+        
+        return Response({
+            'reputation_points': user.reputation_points,
+            'reputation_level': user.get_reputation_level(),
+            'reputation_badges': user.get_reputation_badges(),
+            'trust_score': round(trust_score, 1),
+            'total_items_shared': user.total_items_shared,
+            'total_items_received': user.total_items_received,
+            'successful_transactions': user.successful_transactions,
+        })
+
+class PublicUserView(generics.RetrieveAPIView):
+    """View for getting public user information"""
+    permission_classes = [AllowAny]
+    serializer_class = PublicUserSerializer
+    queryset = User.objects.all()
+    
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        
+        # Add trust score
+        trust_score = calculate_user_trust_score(instance)
+        data['trust_score'] = round(trust_score, 1)
+        
+        return Response(data)

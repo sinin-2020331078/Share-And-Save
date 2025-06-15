@@ -1,11 +1,17 @@
-from django.urls import path
+from django.urls import path, include
 from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework.routers import DefaultRouter
 from .views import (
     UserRegistrationView,
     UserLoginView,
     UserProfileView,
-    EmailVerificationView
+    EmailVerificationView,
+    ReputationViewSet,
+    PublicUserView
 )
+
+router = DefaultRouter()
+router.register(r'reputation', ReputationViewSet, basename='reputation')
 
 urlpatterns = [
     # Authentication endpoints
@@ -18,4 +24,10 @@ urlpatterns = [
     
     # Email verification endpoint
     path('verify-email/', EmailVerificationView.as_view(), name='verify_email'),
-] 
+    
+    # Public user info
+    path('public/<int:pk>/', PublicUserView.as_view(), name='public_user'),
+    
+    # Reputation endpoints
+    path('', include(router.urls)),
+]
